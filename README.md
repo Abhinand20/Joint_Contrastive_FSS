@@ -1,6 +1,6 @@
 # Joint_Contrastive_FSS
 
-### Steps to run training on MRI-abd dataset :
+### Steps to run training on MRI-abd dataset
 ###### SETUP
 1. Clone this repository and change the working directory to the root directory of this project `Joint_Contrastive_FSS/`
 2. Copy the `data` folder from `/local/scratch/v_abhinand_jha/` directory on Lab's server and paste it to the root directory of this project
