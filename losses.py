@@ -7,7 +7,6 @@ def cos_sim(vec_a,vec_b,temp_factor = 0.1):
     
 
     cos_sim_ans = F.cosine_similarity(vec_a,vec_b,dim=-1) / temp_factor
-
     return cos_sim_ans
 
 def local_cont_loss(y_fin,y_l_reg,pos_indx,neg_indx,num_filters=16,batch_size=1,local_loss_exp_no=0):
