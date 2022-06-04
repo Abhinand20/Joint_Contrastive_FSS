@@ -26,7 +26,7 @@ MAX_ITERS_PER_LOAD=1000 # defines the size of an epoch
 SNAPSHOT_INTERVAL=2000 # interval for checking validation dice
 
 
-# Use true GT Masks for evaluation
+# # Use true GT Masks for evaluation
 cp ./data/CHAOST2/normalized_labels/* ./data/CHAOST2/chaos_MR_T2_normalized
 
 for EVAL_FOLD in "${ALL_EV[@]}"
@@ -37,7 +37,7 @@ do
 
     echo "Start validation for fold : ${EVAL_FOLD}"
 
-    RELOAD_PATH='./exps/exp_lbl1_0/train_unsup_CHAOST2_lbgroup0_vfold1/1/snapshots/seg_best.pth' # Feed the reload path for current model
+    RELOAD_PATH='./exps/exp_lbl1_0/train_unsup_CHAOST2_lbgroup0_vfold3/1/snapshots/seg_best.pth' # Feed the reload path for current model
 
     PREFIX="valid_${DATASET}_lbgroup${LABEL_SETS}_vfold${EVAL_FOLD}"
     echo $PREFIX
@@ -74,3 +74,13 @@ do
     echo "Finished validation for fold : ${EVAL_FOLD}"
 
 done
+
+echo "Calculating CV scores"
+
+python3 exp_evaluate.py $DATASET \
+$LABEL_SETS \
+${#ALL_EV[@]} \
+"./exps/${CPT}_${LABEL_SETS}/valid_${DATASET}_lbgroup${LABEL_SETS}_vfold" \
+"${CPT}_${LABEL_SETS}"
+
+echo "CV scores for ${CPT}_${LABEL_SETS} saved!"

@@ -12,12 +12,12 @@ NWORKER=0
 ALL_EV=( 0 1 2 3) # 4-fold cross validation (0, 1, 2, 3) 
 SEED='1234'
 ### Use L/R kidney as testing classes
-LABEL_SETS=0 
-EXCLU='[]' # setting 2: excluding kidneies in training set to test generalization capability even though they are unlabeled. Use [] for setting 1 by Roy et al.
+# LABEL_SETS=0 
+# EXCLU='[]' # setting 2: excluding kidneies in training set to test generalization capability even though they are unlabeled. Use [] for setting 1 by Roy et al.
 
 ### Use Liver and spleen as testing classes
-# LABEL_SETS=1 
-# EXCLU='[]' 
+LABEL_SETS=1 
+EXCLU='[]' 
 
 
 for EVAL_FOLD in "${ALL_EV[@]}"
