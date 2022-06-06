@@ -176,30 +176,30 @@ class crop(nn.Module):
     #     ################### crop #####################
     #     self.crop = crop()
 
-    # def forward(self, x):
+    # # def forward(self, x):
 
-        conv1 = self.conv1_bn_relu_layer(x)
-        conv2 = self.conv2_bn_relu_layer(conv1)
-        conv3 = self.pool_conv3_bn_relu_layer(conv2)
-        conv4 = self.conv4_bn_relu_layer(conv3)
-        conv5 = self.pool_conv5_bn_relu_layer(conv4)
-        conv6 = self.conv6_bn_relu_layer(conv5)
+    #     conv1 = self.conv1_bn_relu_layer(x)
+    #     conv2 = self.conv2_bn_relu_layer(conv1)
+    #     conv3 = self.pool_conv3_bn_relu_layer(conv2)
+    #     conv4 = self.conv4_bn_relu_layer(conv3)
+    #     conv5 = self.pool_conv5_bn_relu_layer(conv4)
+    #     conv6 = self.conv6_bn_relu_layer(conv5)
 
-        # torch.nn.functional.interpolate(size=None, scale_factor = None, mode = 'nearest', align_corners = None)
-        # the input data is assumed to be of the form minibatch x channels x [Optinal depth] x [optional height] x width
-        # hence, for spatial inputs, we expect a 4D Tensor
-        # one can EITHER give a "scale_factor" or a the target output "size" to calculate thje output size (cannot give both, as it's ambiguous)
-        conv4_upsample_crop = self.crop(F.interpolate(conv4, scale_factor = 2, mode = 'bilinear'), conv2)
-        conv6_upsample_crop = self.crop(F.interpolate(conv6, scale_factor = 4, mode = 'bilinear'), conv2)
+    #     # torch.nn.functional.interpolate(size=None, scale_factor = None, mode = 'nearest', align_corners = None)
+    #     # the input data is assumed to be of the form minibatch x channels x [Optinal depth] x [optional height] x width
+    #     # hence, for spatial inputs, we expect a 4D Tensor
+    #     # one can EITHER give a "scale_factor" or a the target output "size" to calculate thje output size (cannot give both, as it's ambiguous)
+    #     conv4_upsample_crop = self.crop(F.interpolate(conv4, scale_factor = 2, mode = 'bilinear'), conv2)
+    #     conv6_upsample_crop = self.crop(F.interpolate(conv6, scale_factor = 4, mode = 'bilinear'), conv2)
         
-        #print('x shape', x.shape) ([1, 5, 321, 481])
-        #print('conv2 shape', conv2.shape) [1, 64, 321, 481])
-        #print('conv4_upsample_crop', conv4_upsample_crop.shape) ([1, 64, 321, 481])
-        #print('conv6_upsample_crop', conv6_upsample_crop.shape) ([1, 64, 321, 481])
-        conv7_input = torch.cat((x, conv2, conv4_upsample_crop, conv6_upsample_crop), dim = 1)
-        conv7 = self.conv7_relu_layer(conv7_input)
+    #     #print('x shape', x.shape) ([1, 5, 321, 481])
+    #     #print('conv2 shape', conv2.shape) [1, 64, 321, 481])
+    #     #print('conv4_upsample_crop', conv4_upsample_crop.shape) ([1, 64, 321, 481])
+    #     #print('conv6_upsample_crop', conv6_upsample_crop.shape) ([1, 64, 321, 481])
+    #     conv7_input = torch.cat((x, conv2, conv4_upsample_crop, conv6_upsample_crop), dim = 1)
+    #     conv7 = self.conv7_relu_layer(conv7_input)
         
-        return torch.cat((x, conv7), dim = 1)
+    #     return torch.cat((x, conv7), dim = 1)
 
 class conv_bn_relu(nn.Module):
     def __init__(self, in_channels, channels, bn=True):
