@@ -9,6 +9,7 @@ import torch.optim as optim
 import sys
 from utils import get_spixel_init, compute_neighbor_spix_idx, compute_init_spixel_feat
 from resnet import ResNet
+import torchvision
 #####################
 # 1. Define the model
 #####################
@@ -124,58 +125,58 @@ class crop(nn.Module):
         return x
 
 # class CNN(nn.Module):
-    def __init__(self, in_channels, out_channels, num_pixel_features):
-        super(CNN, self).__init__()
+    # def __init__(self, in_channels, out_channels, num_pixel_features):
+    #     super(CNN, self).__init__()
 
-        ##############################################
-        ########## 1st convolutional layer ###########
-        self.conv1_bn_relu_layer = nn.Sequential()
-        self.conv1_bn_relu_layer.add_module("conv", nn.Conv2d(in_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
-        self.conv1_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels))
-        self.conv1_bn_relu_layer.add_module("relu", nn.ReLU())
+    #     ##############################################
+    #     ########## 1st convolutional layer ###########
+    #     self.conv1_bn_relu_layer = nn.Sequential()
+    #     self.conv1_bn_relu_layer.add_module("conv", nn.Conv2d(in_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
+    #     self.conv1_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels))
+    #     self.conv1_bn_relu_layer.add_module("relu", nn.ReLU())
 
-        ##############################################
-        ###### 2nd/4th/6th convolutional layers ######
-        self.conv2_bn_relu_layer = nn.Sequential()
-        self.conv2_bn_relu_layer.add_module("conv", nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
-        self.conv2_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels))
-        self.conv2_bn_relu_layer.add_module("relu", nn.ReLU())
+    #     ##############################################
+    #     ###### 2nd/4th/6th convolutional layers ######
+    #     self.conv2_bn_relu_layer = nn.Sequential()
+    #     self.conv2_bn_relu_layer.add_module("conv", nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
+    #     self.conv2_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels))
+    #     self.conv2_bn_relu_layer.add_module("relu", nn.ReLU())
 
-        self.conv4_bn_relu_layer = nn.Sequential()
-        self.conv4_bn_relu_layer.add_module("conv", nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
-        self.conv4_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels))
-        self.conv4_bn_relu_layer.add_module("relu", nn.ReLU())
+    #     self.conv4_bn_relu_layer = nn.Sequential()
+    #     self.conv4_bn_relu_layer.add_module("conv", nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
+    #     self.conv4_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels))
+    #     self.conv4_bn_relu_layer.add_module("relu", nn.ReLU())
 
-        self.conv6_bn_relu_layer = nn.Sequential()
-        self.conv6_bn_relu_layer.add_module("conv", nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
-        self.conv6_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels))
-        self.conv6_bn_relu_layer.add_module("relu", nn.ReLU())
+    #     self.conv6_bn_relu_layer = nn.Sequential()
+    #     self.conv6_bn_relu_layer.add_module("conv", nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
+    #     self.conv6_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels))
+    #     self.conv6_bn_relu_layer.add_module("relu", nn.ReLU())
         
-        ##############################################
-        ######## 3rd/5th convolutional layers ########
-        self.pool_conv3_bn_relu_layer = nn.Sequential()
-        self.pool_conv3_bn_relu_layer.add_module("maxpool", nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1))
-        self.pool_conv3_bn_relu_layer.add_module("conv", nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
-        self.pool_conv3_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels)) # the gamma and betas are trainable parameters of Batchnorm
-        self.pool_conv3_bn_relu_layer.add_module("relu", nn.ReLU())
+    #     ##############################################
+    #     ######## 3rd/5th convolutional layers ########
+    #     self.pool_conv3_bn_relu_layer = nn.Sequential()
+    #     self.pool_conv3_bn_relu_layer.add_module("maxpool", nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1))
+    #     self.pool_conv3_bn_relu_layer.add_module("conv", nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
+    #     self.pool_conv3_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels)) # the gamma and betas are trainable parameters of Batchnorm
+    #     self.pool_conv3_bn_relu_layer.add_module("relu", nn.ReLU())
 
-        self.pool_conv5_bn_relu_layer = nn.Sequential()
-        self.pool_conv5_bn_relu_layer.add_module("maxpool", nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1))
-        self.pool_conv5_bn_relu_layer.add_module("conv", nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
-        self.pool_conv5_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels))
-        self.pool_conv5_bn_relu_layer.add_module("relu", nn.ReLU())
+    #     self.pool_conv5_bn_relu_layer = nn.Sequential()
+    #     self.pool_conv5_bn_relu_layer.add_module("maxpool", nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1))
+    #     self.pool_conv5_bn_relu_layer.add_module("conv", nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1))
+    #     self.pool_conv5_bn_relu_layer.add_module("batchnorm", nn.BatchNorm2d(out_channels))
+    #     self.pool_conv5_bn_relu_layer.add_module("relu", nn.ReLU())
 
-        ##############################################
-        ####### 7th (Last) convolutional layer #######
-        self.conv7_relu_layer = nn.Sequential()
-        self.conv7_relu_layer.add_module("conv", nn.Conv2d(3 * out_channels + in_channels, num_pixel_features - in_channels, kernel_size = 3, stride = 1, padding = 1))
-        self.conv7_relu_layer.add_module("relu", nn.ReLU())
+    #     ##############################################
+    #     ####### 7th (Last) convolutional layer #######
+    #     self.conv7_relu_layer = nn.Sequential()
+    #     self.conv7_relu_layer.add_module("conv", nn.Conv2d(3 * out_channels + in_channels, num_pixel_features - in_channels, kernel_size = 3, stride = 1, padding = 1))
+    #     self.conv7_relu_layer.add_module("relu", nn.ReLU())
 
-        ##############################################
-        ################### crop #####################
-        self.crop = crop()
+    #     ##############################################
+    #     ################### crop #####################
+    #     self.crop = crop()
 
-    def forward(self, x):
+    # def forward(self, x):
 
         conv1 = self.conv1_bn_relu_layer(x)
         conv2 = self.conv2_bn_relu_layer(conv1)
@@ -227,6 +228,7 @@ class resnet_extractor(nn.Module):
         # Load and initialize the model
         super(resnet_extractor, self).__init__()
         self.RNET = ResNet(101)
+        #self.RNET = torchvision.models.segmentation.deeplabv3_resnet101(pretrained=False, progress=True, num_classes=21, aux_loss=None)
         ck = torch.load('./densecl_r101_imagenet_200ep.pth', map_location=torch.device('cuda'))
         self.RNET.load_state_dict(ck['state_dict'])
         
@@ -234,9 +236,9 @@ class resnet_extractor(nn.Module):
         # self.RNET.eval()
 
         # Can ignore : This is for SSN model
-        self.RNET.conv1.register_forward_hook(self.get_activation('conv1')) # Gets first activation # (64,112,112)
-        self.RNET.layer1[0].conv1.register_forward_hook(self.get_activation('conv2')) # Gets second activation (64,64,64)
-        self.RNET.layer1[0].conv2.register_forward_hook(self.get_activation('conv3')) # Gets third activation (64,64,64)
+        self.RNET.conv1.register_forward_hook(self.get_activation('conv1')) 
+        self.RNET.layer1[0].conv1.register_forward_hook(self.get_activation('conv2')) 
+        self.RNET.layer1[0].conv2.register_forward_hook(self.get_activation('conv3')) 
 
         self.upsample_2 = nn.Upsample(scale_factor=2, mode='bilinear')
         self.upsample_4 = nn.Upsample(scale_factor=4, mode='bilinear')
@@ -250,31 +252,30 @@ class resnet_extractor(nn.Module):
             return hook
 
     def forward(self, x):
+
         # Only first 3 channels
+        self.RNET.forward(x[:,:3,:,:]) # (64,112,112) # Extracting 1st layer You want last layer (2048,7,7)
+        conv1 = self.activation['conv1']
+        conv2 = self.activation['conv2']
+        conv3 = self.activation['conv3']
+        # Upsampling
+        conv1 = self.upsample_2(conv1) 
+        conv2 = self.upsample_4(conv2)
+        conv3 = self.upsample_4(conv3)
 
-        with torch.no_grad(): 
-            self.RNET.forward(x[:,:3,:,:]) # (64,112,112) # Extracting 1st layer You want last layer (2048,7,7)
-            conv1 = self.activation['conv1']
-            conv2 = self.activation['conv2']
-            conv3 = self.activation['conv3']
-            # Upsampling
-            conv1 = self.upsample_2(conv1) 
-            conv2 = self.upsample_4(conv2)
-            conv3 = self.upsample_4(conv3)
-
-            # print('xshape', x.shape) ([1, 64, 321, 481])
-            # print('conv1.shape', conv1.shape) #([1, 64, 322, 482])
-            # print('conv2.shape', conv2.shape) # ([1, 64, 324, 484])
-            # print('conv3.shape', conv3.shape) # ([1, 64, 324, 484])
-            # Concat
-            # Temporary fix
-            conv1 = conv1[:,:,:-1,:-1]
-            conv2 = conv2[:,:,:-3,:-3]
-            conv3 = conv3[:,:,:-3,:-3]
-            conv_concat = torch.cat((x, conv1, conv2, conv3), 1)
-            self.feat_out = self.conv7(conv_concat) 
-            conv_comb = torch.cat((x, self.feat_out), 1)
-            return conv_comb
+        # print('xshape', x.shape) ([1, 64, 321, 481])
+        # print('conv1.shape', conv1.shape) #([1, 64, 322, 482])
+        # print('conv2.shape', conv2.shape) # ([1, 64, 324, 484])
+        # print('conv3.shape', conv3.shape) # ([1, 64, 324, 484])
+        # Concat
+        # Temporary fix
+        conv1 = conv1[:,:,:-1,:-1]
+        conv2 = conv2[:,:,:-3,:-3]
+        conv3 = conv3[:,:,:-3,:-3]
+        conv_concat = torch.cat((x, conv1, conv2, conv3), 1)
+        self.feat_out = self.conv7(conv_concat) 
+        conv_comb = torch.cat((x, self.feat_out), 1)
+        return conv_comb
 
 
 

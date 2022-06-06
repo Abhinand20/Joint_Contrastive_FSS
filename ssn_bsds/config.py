@@ -28,7 +28,8 @@ ITER_SAVE = 10000
 # 5. Hardware-related parameters
 RAND_SEED = 2356
 DEVICE = 0
-DEVICES = list(range(0, 4))
+#DEVICES = list(range(0, 4))
+DEVICES = [0]
 NUM_WORKERS = 4
 
 # 6. Dataset, log, model directories
