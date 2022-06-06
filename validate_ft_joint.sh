@@ -12,7 +12,7 @@ NWORKER=0
 ALL_EV=( 0 1 2 3) # 4-fold cross validation (0, 1, 2, 3) 
 SEED='1234'
 ### Use L/R kidney as testing classes
-LABEL_SETS=0 
+LABEL_SETS=0
 EXCLU='[]' # setting 2: excluding kidneies in training set to test generalization capability even though they are unlabeled. Use [] for setting 1 by Roy et al.
 
 ### Use Liver and spleen as testing classes
@@ -28,52 +28,53 @@ SNAPSHOT_INTERVAL=2000 # interval for checking validation dice
 
 # # Use true GT Masks for evaluation
 cp ./data/CHAOST2/normalized_labels/* ./data/CHAOST2/chaos_MR_T2_normalized
-
+    
 for EVAL_FOLD in "${ALL_EV[@]}"
-do
-    
-    echo ===================================
-    
+    do
+        
+        echo ===================================
+        
 
-    echo "Start validation for fold : ${EVAL_FOLD}"
+        echo "Start validation for fold : ${EVAL_FOLD}"
+        LOGDIR="./exps/${CPT}_${LABEL_SETS}/"
+        TRAIN_PREFIX="train_unsup_${DATASET}_lbgroup${LABEL_SETS}_vfold${EVAL_FOLD}"
+        LATEST_RUN=$(ls "${LOGDIR}${TRAIN_PREFIX}" -tp | head -1)
+        RELOAD_PATH="./exps/${CPT}_${LABEL_SETS}/train_unsup_${DATASET}_lbgroup${LABEL_SETS}_vfold${EVAL_FOLD}/${LATEST_RUN}/snapshots/seg_best.pth" 
+        PREFIX="valid_${DATASET}_lbgroup${LABEL_SETS}_vfold${EVAL_FOLD}"
+        echo $PREFIX
+        
+        
+        if [ ! -d $LOGDIR ]
+        then
+            mkdir -p $LOGDIR
+        fi
 
-    RELOAD_PATH='./exps/exp_lbl1_0/train_unsup_CHAOST2_lbgroup0_vfold3/1/snapshots/seg_best.pth' # Feed the reload path for current model
+        python3 validation.py with \
+        'modelname=densecl_res101' \
+        'usealign=True' \
+        'optim_type=sgd' \
+        num_workers=$NWORKER \
+        scan_per_load=-1 \
+        label_sets=$LABEL_SETS \
+        'use_wce=True' \
+        exp_prefix=$PREFIX \
+        'clsname=grid_proto' \
+        n_steps=$NSTEP \
+        exclude_cls_list=$EXCLU \
+        eval_fold=$EVAL_FOLD \
+        dataset=$DATASET \
+        proto_grid_size=$PROTO_GRID \
+        max_iters_per_load=$MAX_ITERS_PER_LOAD \
+        min_fg_data=100 seed=$SEED \
+        save_snapshot_every=$SNAPSHOT_INTERVAL \
+        superpix_scale=$SUPERPIX_SCALE \
+        lr_step_gamma=$DECAY \
+        path.log_dir=$LOGDIR \
+        reload_model_path=$RELOAD_PATH
 
-    PREFIX="valid_${DATASET}_lbgroup${LABEL_SETS}_vfold${EVAL_FOLD}"
-    echo $PREFIX
-    LOGDIR="./exps/${CPT}_${LABEL_SETS}/"
+        echo "Finished validation for fold : ${EVAL_FOLD}"
 
-    if [ ! -d $LOGDIR ]
-    then
-        mkdir -p $LOGDIR
-    fi
-
-    python3 validation.py with \
-    'modelname=densecl_res101' \
-    'usealign=True' \
-    'optim_type=sgd' \
-    num_workers=$NWORKER \
-    scan_per_load=-1 \
-    label_sets=$LABEL_SETS \
-    'use_wce=True' \
-    exp_prefix=$PREFIX \
-    'clsname=grid_proto' \
-    n_steps=$NSTEP \
-    exclude_cls_list=$EXCLU \
-    eval_fold=$EVAL_FOLD \
-    dataset=$DATASET \
-    proto_grid_size=$PROTO_GRID \
-    max_iters_per_load=$MAX_ITERS_PER_LOAD \
-    min_fg_data=100 seed=$SEED \
-    save_snapshot_every=$SNAPSHOT_INTERVAL \
-    superpix_scale=$SUPERPIX_SCALE \
-    lr_step_gamma=$DECAY \
-    path.log_dir=$LOGDIR \
-    reload_model_path=$RELOAD_PATH
-
-    echo "Finished validation for fold : ${EVAL_FOLD}"
-
-done
+    done
 
 echo "Calculating CV scores"
 
