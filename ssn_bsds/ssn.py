@@ -254,19 +254,22 @@ class resnet_extractor(nn.Module):
     def forward(self, x):
 
         # Only first 3 channels
-        self.RNET.forward(x[:,:3,:,:]) # (64,112,112) # Extracting 1st layer You want last layer (2048,7,7)
+        # print('xshape', x.shape) # ([8, 5, 201, 201])
+        self.RNET.forward(x[:,:3,:,:]) 
+        # print(self.RNET.forward(x[:,:3,:,:])[0].shape) [8, 64, 101, 101])
         conv1 = self.activation['conv1']
         conv2 = self.activation['conv2']
         conv3 = self.activation['conv3']
+
         # Upsampling
         conv1 = self.upsample_2(conv1) 
         conv2 = self.upsample_4(conv2)
         conv3 = self.upsample_4(conv3)
-
-        # print('xshape', x.shape) ([1, 64, 321, 481])
-        # print('conv1.shape', conv1.shape) #([1, 64, 322, 482])
-        # print('conv2.shape', conv2.shape) # ([1, 64, 324, 484])
-        # print('conv3.shape', conv3.shape) # ([1, 64, 324, 484])
+    
+        # print('xshape', x.shape) # ([8, 5, 201, 201])
+        # print('conv1.shape', conv1.shape) #([8, 64, 202, 202])
+        # print('conv2.shape', conv2.shape) # ([8, 64, 204, 204])
+        # print('conv3.shape', conv3.shape) # ([8, 64, 204, 204])
         # Concat
         # Temporary fix
         conv1 = conv1[:,:,:-1,:-1]
