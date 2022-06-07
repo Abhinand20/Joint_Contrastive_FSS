@@ -13,3 +13,6 @@
 5. Open `validate_ft_joint.sh` and configure the trained model path in `RELOAD_PATH` variable eg. `RELOAD_PATH='./exps/exp_lbl1_0/train_unsup_CHAOST2_lbgroup0_vfold1/1/snapshots/seg_best.pth'`
 6. Run `bash validate_ft_joint.sh` to get validation results for the trained model on all folds
 7. The cross-validation DICE scores will be stored as a CSV file in `./results/` directory
+
+\# | Paper | Tags | Code (if any) 
+--- | --- | --- | ---
