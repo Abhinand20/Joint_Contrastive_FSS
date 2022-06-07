@@ -14,5 +14,9 @@
 6. Run `bash validate_ft_joint.sh` to get validation results for the trained model on all folds
 7. The cross-validation DICE scores will be stored as a CSV file in `./results/` directory
 
+##### Related work
 \# | Paper | Tags | Code (if any) 
 --- | --- | --- | ---
+1 | https://arxiv.org/pdf/2003.08462.pdf | |
+2 | https://arxiv.org/pdf/2108.11694.pdf | |
+3 | https://arxiv.org/pdf/2110.08954.pdf | |
