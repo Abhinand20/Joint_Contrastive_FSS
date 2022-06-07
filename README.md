@@ -17,6 +17,7 @@
 ##### Related work
 \# | Paper | Tags | Code (if any) 
 --- | --- | --- | ---
-1 | https://arxiv.org/pdf/2003.08462.pdf | |
+1 | Semi-supervised few-shot learning for medical
+image segmentation[https://arxiv.org/pdf/2003.08462.pdf] | |
 2 | https://arxiv.org/pdf/2108.11694.pdf | |
 3 | https://arxiv.org/pdf/2110.08954.pdf | |
