@@ -42,7 +42,7 @@ DATASET_INFO = {
                 0: set([1,6]  ), # upper_abdomen: spleen + liver as training, kidneis are testing
                 1: set( [2,3] ), # lower_abdomen
                     },
-            'LBL_PIDS' : ['0','1','2','3']
+            'LBL_PIDS' : ['3']
             }
 
 }
