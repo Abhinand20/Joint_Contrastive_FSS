@@ -196,7 +196,6 @@ def update_class_slice_index(dataset):
         fopen.close()  
     
     print("Class slice index updated!")
-<<<<<<< HEAD
 
 def organize_sample_fids(base_dir,scan_ids):
     out_list = {}
@@ -236,5 +235,3 @@ def get_CT_norm_op(which_dataset, base_dir, tr_pids):
     norm_func = get_normalize_op(img_modality, [ fid_pair['img_fid'] for _, fid_pair in img_lb_fids.items()])
 
     return norm_func
-=======
->>>>>>> fcdf4fa4fa582f43f48fe1b4116ac09a50ee1479
