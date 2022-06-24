@@ -10,6 +10,12 @@
 4. Run `bash train_ft_joint.sh` to start the cross validation training, configs can be updated in the bash script
 
 ##### VALIDATION
-5. Open `validate_ft_joint.sh` and configure the trained model path in `RELOAD_PATH` variable eg. `RELOAD_PATH='./exps/exp_lbl1_0/train_unsup_CHAOST2_lbgroup0_vfold1/1/snapshots/seg_best.pth'`
-6. Run `bash validate_ft_joint.sh` to get validation results for the trained model on all folds
-7. The cross-validation DICE scores will be stored as a CSV file in `./results/` directory
+5. Run `bash validate_ft_joint.sh` to get validation results for the trained model on all folds
+6. The cross-validation DICE scores will be stored as a CSV file in `./results/` directory
+
+##### Related work
+\# | Paper | Tags | Code (if any) 
+--- | --- | --- | ---
+1 | [Semi-supervised few-shot learning for medical image segmentation](https://arxiv.org/pdf/2003.08462.pdf) | |
+2 | [PoissonSeg: Semi-Supervised Few-Shot Medical Image Segmentation via Poisson Learning](https://arxiv.org/pdf/2108.11694.pdf) | |
+3 | [Uncertainty-Aware Semi-Supervised Few Shot Segmentation](https://arxiv.org/pdf/2110.08954.pdf) | |
