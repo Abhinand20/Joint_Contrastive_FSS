@@ -13,8 +13,7 @@ import numpy as np
 from models.contrastive_fewshot import FewShotSeg, ContrastiveBranch
 
 from dataloaders.dev_customized_med import med_fewshot_val
-from dataloaders.GenericSuperDatasetv2 import SuperpixelDataset
-from dataloaders.dataset_utils import DATASET_INFO, get_normalize_op
+from dataloaders.dataset_utils import DATASET_INFO, get_normalize_op, get_CT_norm_op,update_class_slice_index
 from dataloaders.niftiio import convert_to_sitk
 
 from util.metric import Metric
@@ -59,7 +58,7 @@ def main(_run, _config, _log):
     _log.info('###### Load data ######')
     ### Training set
     data_name = _config['dataset']
-    if data_name == 'SABS_Superpix':
+    if data_name == 'SABS':
         baseset_name = 'SABS'
         max_label = 13
     elif data_name == 'C0_Superpix':
@@ -82,24 +81,6 @@ def main(_run, _config, _log):
     _log.info(f'###### Labels excluded in training : {[lb for lb in _config["exclude_cls_list"]]} ######')
     _log.info(f'###### Unseen labels evaluated in testing: {[lb for lb in test_labels]} ######')
 
-    if baseset_name == 'SABS': # for CT we need to know statistics of 
-        tr_parent = SuperpixelDataset( # base dataset
-            which_dataset = baseset_name,
-            base_dir=_config['path'][data_name]['data_dir'],
-            idx_split = _config['eval_fold'],
-            mode='train',
-            min_fg=str(_config["min_fg_data"]), # dummy entry for superpixel dataset
-            transforms=None,
-            nsup = _config['task']['n_shots'],
-            scan_per_load = _config['scan_per_load'],
-            exclude_list = _config["exclude_cls_list"],
-            superpix_scale = _config["superpix_scale"],
-            fix_length = _config["max_iters_per_load"] if (data_name == 'C0_Superpix') or (data_name == 'CHAOST2_Superpix') else None
-        )
-        norm_func = tr_parent.norm_func
-    else:
-        norm_func = get_normalize_op(modality = 'MR', fids = None)
-
     ## Getting the curr fold validation PIDs
     lbl_pids = DATASET_INFO[baseset_name]['LBL_PIDS']
     img_pids = [ re.findall('\d+', fid)[-1] for fid in glob.glob(_config['path'][data_name]['data_dir'] + "/image_*.nii.gz") ]
@@ -110,9 +91,17 @@ def main(_run, _config, _log):
         sep = DATASET_INFO[baseset_name]['_SEP']
     idx_split = _config['eval_fold']
     val_pids  = available_pids[sep[idx_split]: sep[idx_split + 1]]
+    unlbl_pids = [ii for ii in available_pids if ii not in val_pids]
+    tr_pids_all = lbl_pids + unlbl_pids
+
+    if baseset_name == 'SABS': # for CT we need to know statistics of the entire training data
+        norm_func = get_CT_norm_op(which_dataset=baseset_name, base_dir=_config['path'][baseset_name]['data_dir'], tr_pids=tr_pids_all)
+    else:
+        norm_func = get_normalize_op(modality = 'MR', fids = None)
 
     print(f"Validation PIDs : {val_pids}")
-
+    update_class_slice_index(baseset_name)
+    
     te_dataset, _ = med_fewshot_val(
         dataset_name = baseset_name,
         tr_pids=val_pids,
@@ -150,7 +139,6 @@ def main(_run, _config, _log):
     _log.info('###### Starting validation ######')
     model.eval()
     mar_val_metric_node.reset()
-
     with torch.no_grad():
         # Index into the buffer and keep adding preds
         save_pred_buffer = {} # indexed by class
@@ -182,10 +170,18 @@ def main(_run, _config, _log):
                     ii = 0
                     curr_scan_count += 1
                     _scan_id = sample_batched["scan_id"][0]
-                    outsize = te_dataset.dataset.info_by_scan[_scan_id]["array_size"]
+                    
+                    """outsize = te_dataset.dataset.info_by_scan[_scan_id]["array_size"]
                     outsize = (256, 256, outsize[0]) # original image read by itk: Z, H, W, in prediction we use H, W, Z
                     _pred = np.zeros( outsize )
+                    _pred.fill(np.nan)"""
+                    
+                    outsize_orig = te_dataset.dataset.info_by_scan[_scan_id]["array_size"]
+                    outsize = (256, 256, outsize_orig[0]) 
+                    _pred = np.zeros( outsize )
                     _pred.fill(np.nan)
+                    overall_outsize = (outsize_orig[0],max_label+1,256,256) # (Channels,num_class,H,W) : Incl. bg as placeholder
+                    overall_pred = np.zeros(overall_outsize)
 
                 q_part = sample_batched["part_assign"] # the chunck of query, for assignment with support
                 query_images = [sample_batched['image'].cuda()]
@@ -210,7 +206,12 @@ def main(_run, _config, _log):
                 # now check data format
                 if sample_batched["is_end"]:
                     if _config['dataset'] != 'C0':
-                        _lb_buffer[_scan_id] = _pred.transpose(2,0,1) # H, W, Z -> to Z H W
+                        if not _scan_id in _lb_buffer.keys():
+                                overall_pred[:,curr_lb,:,:] = _pred.transpose(2,0,1)
+                                _lb_buffer[_scan_id] = overall_pred # (H, W, num_class, Z) -> (Z, numclass, H, W)
+                        else:
+                            ## Keep labels in different channels to avoid confusion at boundaries
+                            _lb_buffer[_scan_id][:,curr_lb,:,:] = _pred.transpose(2,0,1)
                     else:
                         _lb_buffer[_scan_id] = _pred
 

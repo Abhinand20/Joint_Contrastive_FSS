@@ -59,10 +59,10 @@ def main(_run, _config, _log):
 
     
     _log.info('###### Load data ######')
-    update_class_slice_index()
+    
     ### Training set
     data_name = _config['dataset']
-    if data_name == 'SABS_Superpix':
+    if data_name == 'SABS':
         baseset_name = 'SABS'
     elif data_name == 'C0_Superpix':
         raise NotImplementedError
@@ -71,7 +71,8 @@ def main(_run, _config, _log):
         baseset_name = 'CHAOST2'
     else:
         raise ValueError(f'Dataset: {data_name} not found')
-
+    
+    update_class_slice_index(baseset_name)
     ### Transforms for data augmentation
     tr_transforms = myaug.transform_with_label({'aug': myaug.augs[_config['which_aug']]})
     assert _config['scan_per_load'] < 0 # by default we load the entire dataset directly

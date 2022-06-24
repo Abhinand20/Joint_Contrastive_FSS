@@ -18,7 +18,7 @@ from dataloaders.niftiio import convert_to_sitk
 import SimpleITK as sitk
 from util.metric import Metric
 
-def get_unlbl_pseudo_lbls_sep(model,sup_dataset,unlbl_ids,_config,_log, val_mode = False):
+def get_unlbl_pseudo_lbls_sep(model,sup_dataset,unlbl_ids,_config,_log, norm_func ,val_mode = False):
     """
     This function will make predictions for each class and store them in separate channels
     out_size : ( H, W, max_class, C )
@@ -26,7 +26,7 @@ def get_unlbl_pseudo_lbls_sep(model,sup_dataset,unlbl_ids,_config,_log, val_mode
     """
     model.eval()
     data_name = _config['dataset']
-    if data_name == 'SABS_Superpix':
+    if data_name == 'SABS':
         baseset_name = 'SABS'
         max_label = 13
     elif data_name == 'C0_Superpix':
@@ -46,7 +46,7 @@ def get_unlbl_pseudo_lbls_sep(model,sup_dataset,unlbl_ids,_config,_log, val_mode
         test_labels = DATASET_INFO[baseset_name]['LABEL_GROUP']['pa_all']
     te_transforms = None
 
-    norm_func = get_normalize_op(modality = 'MR', fids = None)
+    # norm_func = get_normalize_op(modality = 'MR', fids = None)
     data_dir = _config['path'][baseset_name]['data_dir']
 
     ## te_parent must contain only the labeled images (To be used as support)

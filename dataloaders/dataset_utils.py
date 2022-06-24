@@ -11,6 +11,9 @@ import pdb
 import SimpleITK as sitk
 import glob
 import json
+import re
+from util.utils import CircularList
+
 sys.path.insert(0, '../../dataloaders/')
 
 DATASET_INFO = {
@@ -18,8 +21,8 @@ DATASET_INFO = {
             'PSEU_LABEL_NAME': ["BGD", "SUPFG"],
             'REAL_LABEL_NAME': ["BG", "LIVER", "RK", "LK", "SPLEEN"],
             '_SEP': [0, 4, 8, 12, 16, 20], # 4 groups of 4, 4, 4, 4 : 4-fold CV (If using 4 labeled volumes)
-            '_SEP1' : [0, 4, 9, 14, 19], # 4 groups of 5, 5, 5, 4 : 4-fold CV (If using 1 labeled volume)
-            '_SEP2' : [0, 3, 8, 13, 18], # 4 groups of 5, 5, 5, 3 : 4-fold CV (If using 2 labeled volumes)
+            '_SEP1' : [0, 4, 9, 14, 19], # 4 groups of 4, 5, 5, 5 : 4-fold CV (If using 1 labeled volume)
+            '_SEP2' : [0, 3, 8, 13, 18], # 4 groups of 3, 5, 5, 5 : 4-fold CV (If using 2 labeled volumes)
             'MODALITY': 'MR',
             'LABEL_GROUP': {
                 'pa_all': set(range(1, 5)),
@@ -35,14 +38,15 @@ DATASET_INFO = {
 
             'REAL_LABEL_NAME': ["BGD", "SPLEEN", "KID_R", "KID_l", "GALLBLADDER", "ESOPHAGUS", "LIVER", "STOMACH", "AORTA", "IVC",\
               "PS_VEIN", "PANCREAS", "AG_R", "AG_L"],
-            '_SEP': [0, 6, 12, 18, 24, 30],
+            # '_SEP': [0, 6, 12, 18, 24, 30], 
+            '_SEP1': [0, 6, 12, 18, 24, 29], # 29 images: 6,6,6,6,5 : 5-fold CV 
             'MODALITY': 'CT',
             'LABEL_GROUP':{
                 'pa_all': set( [1,2,3,6]  ),
                 0: set([1,6]  ), # upper_abdomen: spleen + liver as training, kidneis are testing
                 1: set( [2,3] ), # lower_abdomen
                     },
-            'LBL_PIDS' : ['0','1','2','3']
+            'LBL_PIDS' : ['3']
             }
 
 }
@@ -139,23 +143,27 @@ def read_nii_bysitk(input_fid, peel_info = False):
     else:
         return img_np
 
-def update_class_slice_index():
-    
-    IMG_BNAME="./data/CHAOST2/chaos_MR_T2_normalized/image_*.nii.gz"
-    SEG_BNAME="./data/CHAOST2/chaos_MR_T2_normalized/label_*.nii.gz"
+def update_class_slice_index(dataset):
+    MIN_TP = 100 # minimum number of positive label pixels to be recorded
+    if dataset == 'SABS':
+        IMG_BNAME="./data/SABS/sabs_CT_normalized/image_*.nii.gz"
+        SEG_BNAME="./data/SABS/sabs_CT_normalized/label_*.nii.gz"
+        LABEL_NAME = ["BGD", "SPLEEN", "KID_R", "KID_l", "GALLBLADDER", "ESOPHAGUS", "LIVER", "STOMACH", "AORTA", "IVC", "PS_VEIN", "PANCREAS", "AG_R", "AG_L"]   
+        fid = f'./data/SABS/sabs_CT_normalized/classmap_{MIN_TP}.json' # name of the output file. 
+
+
+    elif dataset == 'CHAOST2':
+        IMG_BNAME="./data/CHAOST2/chaos_MR_T2_normalized/image_*.nii.gz"
+        SEG_BNAME="./data/CHAOST2/chaos_MR_T2_normalized/label_*.nii.gz"
+        LABEL_NAME = ["BG", "LIVER", "RK", "LK", "SPLEEN"]     
+        fid = f'./data/CHAOST2/chaos_MR_T2_normalized/classmap_{MIN_TP}.json' # name of the output file. 
+
     imgs = glob.glob(IMG_BNAME)
     segs = glob.glob(SEG_BNAME)
     imgs = [ fid for fid in sorted(imgs, key = lambda x: int(x.split("_")[-1].split(".nii.gz")[0])  ) ]
     segs = [ fid for fid in sorted(segs, key = lambda x: int(x.split("_")[-1].split(".nii.gz")[0])  ) ]
     classmap = {}
-    LABEL_NAME = ["BG", "LIVER", "RK", "LK", "SPLEEN"]     
 
-
-    # MIN_TP = 1 # minimum number of positive label pixels to be recorded. Use >100 when training with manual annotations for more stable training
-    MIN_TP = 100 # minimum number of positive label pixels to be recorded. Use >100 when training with manual annotations for more stable training
-
-    fid = f'./data/CHAOST2/chaos_MR_T2_normalized/classmap_{MIN_TP}.json' # name of the output file. 
-    # fid = f'./MRI_test/classmap_{MIN_TP}.json' # name of the output file. 
     for _lb in LABEL_NAME:
         classmap[_lb] = {}
         for _sid in segs:
@@ -188,3 +196,42 @@ def update_class_slice_index():
         fopen.close()  
     
     print("Class slice index updated!")
+
+def organize_sample_fids(base_dir,scan_ids):
+    out_list = {}
+    for curr_id in scan_ids:
+        curr_dict = {}
+
+        _img_fid = os.path.join(base_dir, f'image_{curr_id}.nii.gz')
+        _lb_fid  = os.path.join(base_dir, f'label_{curr_id}.nii.gz')
+
+        curr_dict["img_fid"] = _img_fid
+        curr_dict["lbs_fid"] = _lb_fid
+        out_list[str(curr_id)] = curr_dict
+
+    return out_list
+
+
+def get_CT_norm_op(which_dataset, base_dir, tr_pids):
+    img_modality = DATASET_INFO[which_dataset]['MODALITY']
+    sep = DATASET_INFO[which_dataset]['_SEP1']
+    pseu_label_name = DATASET_INFO[which_dataset]['PSEU_LABEL_NAME']
+    real_label_name = DATASET_INFO[which_dataset]['REAL_LABEL_NAME']
+
+    nclass = len(pseu_label_name)
+
+    # find scans in the data folder
+    img_pids = [ re.findall('\d+', fid)[-1] for fid in glob.glob(base_dir + "/image_*.nii.gz") ]
+    img_pids = CircularList(sorted( img_pids, key = lambda x: int(x)))
+
+    # experiment configs
+    # img_pids are just the ones that are passed from outside (Patient IDs of Labeled and Unlabeled sets)
+    if tr_pids == None: # consider all images
+        img_pids = [ re.findall('\d+', fid)[-1] for fid in glob.glob(base_dir + "/image_*.nii.gz") ]
+    else: 
+        img_pids = tr_pids
+
+    img_lb_fids = organize_sample_fids(base_dir,img_pids) # information of scans of the entire fold
+    norm_func = get_normalize_op(img_modality, [ fid_pair['img_fid'] for _, fid_pair in img_lb_fids.items()])
+
+    return norm_func

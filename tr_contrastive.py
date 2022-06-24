@@ -1,14 +1,7 @@
 """
-TODO:
-    1) Implement inter-class contrastive loss calculation and superpixel branch
-
-    3) Try simCLRv2 setting of contrastive network (Increase the contrastive projection head, try with Linear layers too)
-
-    4) k-fold CV setup - DONE
-
-FUTURE STEPS:
-    1) Implement 3rd superpixel branch with contrastive loss
-    2) Test for more datasets -> Card-MRI, CT etc
+Added Inter-contrastive loss 
+FIXME:
+    - Cases when images picked for inter-contrastive calc. don't share any positive labels 
 """
 
 # Intra-class approach 1
@@ -32,7 +25,7 @@ import matplotlib.pyplot as plt
 from models.contrastive_fewshot import FewShotSeg, ContrastiveBranch
 from losses import local_cont_loss
 from dataloaders.dev_customized_med import med_fewshot
-from dataloaders.dataset_utils import DATASET_INFO,update_class_slice_index
+from dataloaders.dataset_utils import DATASET_INFO,update_class_slice_index, get_CT_norm_op, get_normalize_op
 import dataloaders.augutils as myaug
 
 from util.utils import set_seed, t2n, to01, compose_wt_simple
@@ -105,13 +98,15 @@ def main(_run, _config, _log):
     _log.info('###### Load data ######')
     ### Training set
 
-    if data_name == 'SABS_Superpix':
+    if data_name == 'SABS':
         baseset_name = 'SABS'
+        max_label = 13
     elif data_name == 'C0_Superpix':
         raise NotImplementedError
         baseset_name = 'C0'
     elif data_name == 'CHAOST2_Superpix' or data_name == 'CHAOST2':
         baseset_name = 'CHAOST2'
+        max_label = 4
     else:
         raise ValueError(f'Dataset: {data_name} not found')
 
@@ -139,6 +134,12 @@ def main(_run, _config, _log):
     tr_pids_all = lbl_pids + unlbl_pids
     print("Validation PIDs - {}".format(val_pids))
     print("Training PIDs - {}".format(tr_pids_all))
+
+    if baseset_name == 'SABS': # for CT we need to know statistics of the entire training data
+        norm_func = get_CT_norm_op(which_dataset=baseset_name, base_dir=_config['path'][baseset_name]['data_dir'], tr_pids=tr_pids_all)
+    else:
+        norm_func = get_normalize_op(modality = 'MR', fids = None)
+    
     ### DATSET SHOULD CONTAIN ALL TRAINING IMAGES (NOT JUST LABELED) WHILE UNSUPERVISED TRAINING
     tr_paired,act_train_parent = med_fewshot(
         dataset_name=baseset_name,
@@ -176,9 +177,9 @@ def main(_run, _config, _log):
 
     # model_seg gets set to eval here    
     print("### Generating initial pseudo-labels ####")
-    get_unlbl_pseudo_lbls_sep(model=model_seg,sup_dataset = tr_parent,unlbl_ids=unlbl_pids,_config=_config,_log=_log)  
+    get_unlbl_pseudo_lbls_sep(model=model_seg,sup_dataset = tr_parent,unlbl_ids=unlbl_pids,norm_func = norm_func, _config=_config,_log=_log)
     model_seg.train()
-    update_class_slice_index()
+    update_class_slice_index(baseset_name)
 
     ### dataloaders
     trainloader = DataLoader(
@@ -208,9 +209,9 @@ def main(_run, _config, _log):
         
         if(iter_no!=0):
             print("Re-Estimate labels")
-            get_unlbl_pseudo_lbls_sep(model=model_seg,sup_dataset = tr_parent,unlbl_ids=unlbl_pids,_config=_config,_log=_log)  
+            get_unlbl_pseudo_lbls_sep(model=model_seg,sup_dataset = tr_parent,norm_func = norm_func, unlbl_ids=unlbl_pids,_config=_config,_log=_log)  
             model_seg.train()
-            update_class_slice_index()
+            update_class_slice_index(baseset_name)
             _log.info('###### Support PIDs for each class : {} ######'.format(supp_cls_pid_idx))
             
         ## If we finished the final cycle, save the best model and return
@@ -218,7 +219,7 @@ def main(_run, _config, _log):
             _log.info('###### PIDs used in training : {} ######'.format(pids_used))
             _log.info('###### Labels used in training : {} ######'.format(labels_train))
 
-            curr_val_dsc = get_unlbl_pseudo_lbls_sep(model=model_seg,sup_dataset = tr_parent,unlbl_ids=val_pids,_config=_config,_log=_log,val_mode=True)  
+            curr_val_dsc = get_unlbl_pseudo_lbls_sep(model=model_seg,sup_dataset = tr_parent,norm_func = norm_func,unlbl_ids=val_pids,_config=_config,_log=_log,val_mode=True)  
             model_seg.train()
             writer.add_scalar('train/val_dsc', curr_val_dsc, overall_epoch_i + 1)
 
@@ -278,8 +279,8 @@ def main(_run, _config, _log):
             comp = np.concatenate( [query_img, query_all_lbls], axis = -1 ) # (256,256,1) both 
             
             ## Returns 1-hot encoded labels (256,256,num_classes)
-            aug_img_1, aug_lbl_oh_1 = tr_transforms(comp, c_img = 1, c_label = 1, nclass = 5,  is_train = True, use_onehot = True)
-            aug_img_2, aug_lbl_oh_2 = tr_transforms(comp, c_img = 1, c_label = 1, nclass = 5,  is_train = True, use_onehot = True)
+            aug_img_1, aug_lbl_oh_1 = tr_transforms(comp, c_img = 1, c_label = 1, nclass = max_label + 1,  is_train = True, use_onehot = True)
+            aug_img_2, aug_lbl_oh_2 = tr_transforms(comp, c_img = 1, c_label = 1, nclass = max_label + 1,  is_train = True, use_onehot = True)
             
             aug_img_1 = torch.from_numpy( np.transpose( aug_img_1, (2, 0, 1)) )
             aug_img_1 = aug_img_1.repeat( [ 3, 1, 1] )
@@ -300,7 +301,7 @@ def main(_run, _config, _log):
             # Returns pos and neg indices as follows :
             # [ for_each image, [ for_each class, [ for_each positive/negative element, [X & Y coord of the pixel] ] ] ]
             # Whole array will be 1000 if the class in not present in current image : Skip that class while calc. contrastive loss
-            net_pos_ele1_arr,net_pos_ele2_arr,net_neg_ele1_arr,net_neg_ele2_arr = calc_pos_neg_index(lbl_cat_batch,batch_size_ft=1,num_classes=5,no_of_pos_eles=3,no_of_neg_eles=3)
+            net_pos_ele1_arr,net_pos_ele2_arr,net_neg_ele1_arr,net_neg_ele2_arr = calc_pos_neg_index(lbl_cat_batch,batch_size_ft=1,num_classes=max_label+1,no_of_pos_eles=3,no_of_neg_eles=3)
 
             # Convert to torch for network
             img_cat_batch = torch.from_numpy(img_cat_batch).cuda()
@@ -336,14 +337,14 @@ def main(_run, _config, _log):
 
             y_fin_out = model_cont(img_cat_batch)
             try:
-                cont_loss,num_i1_ss,num_i2_ss,den_i1_ss,den_i2_ss = local_cont_loss(y_fin=y_fin_out,y_l_reg=lbl_cat_batch,pos_indx=pos_arr,neg_indx=neg_arr)   
+                cont_loss,num_i1_ss,num_i2_ss,den_i1_ss,den_i2_ss = local_cont_loss(y_fin=y_fin_out,y_l_reg=lbl_cat_batch,pos_indx=pos_arr,neg_indx=neg_arr,dataset=baseset_name)   
 
                 if (math.isnan(cont_loss) == True or cont_loss == 0):
-                    print('continue,epoch_i', overall_epoch_i)
+                    # print('continue,epoch_i', overall_epoch_i)
                     continue
 
                 if (num_i1_ss == 0 or num_i2_ss == 0 or den_i1_ss == 0 or den_i2_ss == 0):
-                    print('continue,epoch_i', overall_epoch_i)
+                    # print('continue,epoch_i', overall_epoch_i)
                     continue
             except:
                 print('Fault in contrastive loss calculation, skip')
@@ -357,7 +358,6 @@ def main(_run, _config, _log):
             total_loss.backward()
             optimizer.step()
             scheduler.step()
-
             # Log loss
             seg_loss = seg_loss.detach().data.cpu().numpy()
             cont_loss = net_cont_loss.detach().data.cpu().numpy()
@@ -389,7 +389,7 @@ def main(_run, _config, _log):
             # Save model based on validation dice score
             if (overall_epoch_i + 1) % _config['save_snapshot_every'] == 0:
                 # Get dice score on validation set
-                curr_val_dsc = get_unlbl_pseudo_lbls_sep(model=model_seg,sup_dataset = tr_parent,unlbl_ids=val_pids,_config=_config,_log=_log,val_mode=True)  
+                curr_val_dsc = get_unlbl_pseudo_lbls_sep(model=model_seg,sup_dataset = tr_parent,norm_func = norm_func,unlbl_ids=val_pids,_config=_config,_log=_log,val_mode=True)  
                 model_seg.train()
 
                 if curr_val_dsc > max_val_dsc:
