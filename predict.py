@@ -29,8 +29,7 @@ def get_unlbl_pseudo_lbls_sep(model,sup_dataset,unlbl_ids,_config,_log, norm_fun
     if data_name == 'SABS':
         baseset_name = 'SABS'
         max_label = 13
-    elif data_name == 'C0_Superpix':
-        raise NotImplementedError
+    elif data_name == 'C0':
         baseset_name = 'C0'
         max_label = 3
     elif data_name == 'CHAOST2_Superpix' or data_name == 'CHAOST2':
@@ -39,9 +38,10 @@ def get_unlbl_pseudo_lbls_sep(model,sup_dataset,unlbl_ids,_config,_log, norm_fun
     else:
         raise ValueError(f'Dataset: {data_name} not found')
     
-    # Predict all classes
+    
     if val_mode:
         test_labels = DATASET_INFO[baseset_name]['LABEL_GROUP']['pa_all'] - DATASET_INFO[baseset_name]['LABEL_GROUP'][_config["label_sets"]]
+    # Predict all classes
     else:
         test_labels = DATASET_INFO[baseset_name]['LABEL_GROUP']['pa_all']
     te_transforms = None
@@ -60,7 +60,8 @@ def get_unlbl_pseudo_lbls_sep(model,sup_dataset,unlbl_ids,_config,_log, norm_fun
         act_labels=test_labels,
         npart = _config['task']['npart'],
         nsup = _config['task']['n_shots'],
-        extern_normalize_func = norm_func
+        extern_normalize_func = norm_func,
+        min_fg = str(_config["min_fg_data"])
     )
 
     ### dataloaders
@@ -142,16 +143,17 @@ def get_unlbl_pseudo_lbls_sep(model,sup_dataset,unlbl_ids,_config,_log, norm_fun
                     ii += 1
                     # now check data format
                     if sample_batched["is_end"]:
-                        if _config['dataset'] != 'C0':
-                            if not _scan_id in _lb_buffer.keys():
-                                overall_pred[:,curr_lb,:,:] = _pred.transpose(2,0,1)
-                                _lb_buffer[_scan_id] = overall_pred # (H, W, num_class, Z) -> (Z, numclass, H, W)
-                            else:
-                                ## Keep labels in different channels to avoid confusion at boundaries
-                                _lb_buffer[_scan_id][:,curr_lb,:,:] = _pred.transpose(2,0,1)
+                        # if _config['dataset'] != 'C0':
 
+                        if not _scan_id in _lb_buffer.keys():
+                            overall_pred[:,curr_lb,:,:] = _pred.transpose(2,0,1)
+                            _lb_buffer[_scan_id] = overall_pred # (H, W, num_class, Z) -> (Z, numclass, H, W)
                         else:
-                            _lb_buffer[_scan_id] = _pred
+                            ## Keep labels in different channels to avoid confusion at boundaries
+                            _lb_buffer[_scan_id][:,curr_lb,:,:] = _pred.transpose(2,0,1)
+
+                        # else:
+                        #     _lb_buffer[_scan_id] = _pred
 
         if val_mode:
             m_classDice,_, m_meanDice,_, m_rawDice = mar_val_metric_node.get_mDice(labels=sorted(test_labels), n_scan=None, give_raw = True)

@@ -100,7 +100,7 @@ def main(_run, _config, _log):
         norm_func = get_normalize_op(modality = 'MR', fids = None)
 
     print(f"Validation PIDs : {val_pids}")
-    update_class_slice_index(baseset_name)
+    update_class_slice_index(baseset_name,min_fg=_config['min_fg_data'])
     
     te_dataset, _ = med_fewshot_val(
         dataset_name = baseset_name,
@@ -110,7 +110,8 @@ def main(_run, _config, _log):
         act_labels=test_labels,
         npart = _config['task']['npart'],
         nsup = _config['task']['n_shots'],
-        extern_normalize_func = norm_func
+        extern_normalize_func = norm_func,
+        min_fg=str(_config['min_fg_data'])
     )
     
     _,te_parent = med_fewshot_val(
@@ -121,7 +122,8 @@ def main(_run, _config, _log):
         act_labels=test_labels,
         npart = _config['task']['npart'],
         nsup = _config['task']['n_shots'],
-        extern_normalize_func = norm_func
+        extern_normalize_func = norm_func,
+        min_fg=str(_config['min_fg_data'])
     )
 
     ### dataloaders
@@ -265,5 +267,3 @@ def main(_run, _config, _log):
 
     _log.info(f'End of validation')
     return 1
-
-

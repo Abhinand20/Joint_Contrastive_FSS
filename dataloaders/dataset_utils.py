@@ -47,6 +47,22 @@ DATASET_INFO = {
                 1: set( [2,3] ), # lower_abdomen
                     },
             'LBL_PIDS' : ['3']
+            },
+        
+    "C0": {
+            'PSEU_LABEL_NAME': ["BGD", "SUPFG"],
+
+            'REAL_LABEL_NAME': ["BGD", "LV_MYO", "LV_BP", "RV"],
+            # '_SEP': [0, 6, 12, 18, 24, 30], 
+            '_SEP1': [0, 7, 14, 21, 28, 34], # 34 images: 7,7,7,7,6 : 5-fold CV 
+            'MODALITY': 'MR',
+            'LABEL_GROUP':{
+                'pa_all': set( [1,2,3] ),
+                0: set([1,3]), # LV_MYO & RV training ; LV_BP testing
+                1: set([2,3]), # LV_BP & RV training ; LV_MYO
+                2: set([1,2]), # LV_MYO & LV_BP training ; RV testing
+                    },
+            'LBL_PIDS' : ['3']
             }
 
 }
@@ -143,8 +159,8 @@ def read_nii_bysitk(input_fid, peel_info = False):
     else:
         return img_np
 
-def update_class_slice_index(dataset):
-    MIN_TP = 100 # minimum number of positive label pixels to be recorded
+def update_class_slice_index(dataset,min_fg):
+    MIN_TP = min_fg # minimum number of positive label pixels to be recorded
     if dataset == 'SABS':
         IMG_BNAME="./data/SABS/sabs_CT_normalized/image_*.nii.gz"
         SEG_BNAME="./data/SABS/sabs_CT_normalized/label_*.nii.gz"
@@ -157,6 +173,15 @@ def update_class_slice_index(dataset):
         SEG_BNAME="./data/CHAOST2/chaos_MR_T2_normalized/label_*.nii.gz"
         LABEL_NAME = ["BG", "LIVER", "RK", "LK", "SPLEEN"]     
         fid = f'./data/CHAOST2/chaos_MR_T2_normalized/classmap_{MIN_TP}.json' # name of the output file. 
+    
+    elif dataset == 'C0':
+        IMG_BNAME="./data/C0/C0_normalized/image_*.nii.gz"
+        SEG_BNAME="./data/C0/C0_normalized/label_*.nii.gz"
+        LABEL_NAME = ["BGD", "LV_MYO", "LV_BP", "RV"]  
+        fid = f'./data/C0/C0_normalized/classmap_{MIN_TP}.json' # name of the output file. 
+    
+    else:
+        raise ValueError(f'Dataset: {dataset} not found')
 
     imgs = glob.glob(IMG_BNAME)
     segs = glob.glob(SEG_BNAME)

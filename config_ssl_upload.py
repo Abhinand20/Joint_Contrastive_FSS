@@ -18,7 +18,7 @@ from datetime import datetime
 sacred.SETTINGS['CONFIG']['READ_ONLY_CONFIG'] = False
 sacred.SETTINGS.CAPTURE_MODE = 'no'
 
-ex = Experiment('cont-test')
+ex = Experiment('cont-test-ct')
 ex.captured_out_filter = apply_backspaces_and_linefeeds
 
 source_folders = ['.', './dataloaders', './models', './util']
@@ -35,25 +35,27 @@ def cfg():
     mode = 'train' # for now only allows 'train' 
     num_workers = 0 # 0 for debugging. 
 
-    dataset = 'CHAOST2_Superpix' # i.e. abdominal MRI
-    # dataset = 'SABS_Superpix' # i.e. abdominal CT
+    # dataset = 'CHAOST2_Superpix' # i.e. abdominal MRI
+    # dataset = 'SABS' # i.e. abdominal CT
+    dataset = 'C0' # i.e. Card-MRI
     use_coco_init = False # initialize backbone with MS_COCO initialization. Anyway coco does not contain medical images
 
     ### Training
-    n_steps = 15100 # Not used in joint training, only in supervised
+    local_loss_exp_no = 0
+    n_steps = 10100 # Not used in joint training, only in supervised
     total_iters = 5
     batch_size = 1
     lr_milestones = [ (ii + 1) * 1000 for ii in range(n_steps // 1000 - 1)]
     lr_step_gamma = 0.95
     ignore_label = 255
     print_interval = 100
-    save_snapshot_every = 2000 # Interval to check the validation dice and store best model
-    max_iters_per_load = 3000 # Number of epochs to train before updating pseudo-labels
-    # max_iters_per_load = 1000 # For supervised training (10 epochs)
+    save_snapshot_every = 4000 # Interval to check the validation dice and store best model
+    # max_iters_per_load = 5000 # Number of epochs to train before updating pseudo-labels
+    max_iters_per_load = 1000 # For supervised training (10 epochs)
     scan_per_load = -1 # numbers of 3d scans per load for saving memory. If -1, load the entire dataset to the memory
     which_aug = 'sabs_aug' # standard data augmentation with intensity and geometric transforms
     input_size = (256, 256)
-    min_fg_data='100' # when training with manual annotations, indicating number of foreground pixels in a single class single slice. This empirically stablizes the training process
+    min_fg_data='1' # when training with manual annotations, indicating number of foreground pixels in a single class single slice. This empirically stablizes the training process
     label_sets = 0 # which group of labels taking as training (the rest are for testing)
     exclude_cls_list = [] # testing classes to be excluded in training. Set to [] if testing under setting 1
     usealign = True # see vanilla PANet
@@ -70,7 +72,7 @@ def cfg():
     # modelname = 'dlfcn_res101' # resnet 101 backbone from torchvision fcn-deeplab
     modelname = 'densecl_res101' # Dense backbone
     clsname = "grid_proto" # 
-    reload_model_path = './runs/cont-unsup-lbl1-again__CHAOST2_Superpix_sets_0_1shot/1/snapshots/seg_5000.pth' # path for reloading a trained model
+    reload_model_path = './runs/_C0_sets_0_1shot/4/snapshots/ft_final.pth' # path for reloading a trained model
     proto_grid_size = 8 # L_H, L_W = (32, 32) / 8 = (4, 4)  in training
     feature_hw = [32, 32] # feature map size, should couple this with backbone in future
 
@@ -116,12 +118,12 @@ def cfg():
         'log_dir': './runs',
         'SABS':{'data_dir': "./data/SABS/sabs_CT_normalized"
             },
-        'C0':{'data_dir': "feed your dataset path here"
+        'C0':{'data_dir': "./data/C0/C0_normalized"
             },
         'CHAOST2':{'data_dir': "./data/CHAOST2/chaos_MR_T2_normalized/"
             },
         'SABS_Superpix':{'data_dir': "./data/SABS/sabs_CT_normalized"},
-        'C0_Superpix':{'data_dir': "feed your dataset path here"},
+        'C0_Superpix':{'data_dir': "./data/C0/C0_normalized"},
         'CHAOST2_Superpix':{'data_dir': "./data/CHAOST2/chaos_MR_T2_normalized/"},
         }
 

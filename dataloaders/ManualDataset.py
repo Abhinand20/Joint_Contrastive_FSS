@@ -1,5 +1,7 @@
 """
 PyTorch dataset class to set up few-shot training of 2D slices taken from 3D volumes
+
+get_samples (Added) : To get images used for contrastive loss calculation
 """
 import glob
 import numpy as np
@@ -40,7 +42,7 @@ class ManualDataset(BaseDataset):
         """
         super(ManualDataset, self).__init__(base_dir)
         self.img_modality = DATASET_INFO[which_dataset]['MODALITY']
-        self.sep = DATASET_INFO[which_dataset]['_SEP']
+        # self.sep = DATASET_INFO[which_dataset]['_SEP']
         self.label_name = DATASET_INFO[which_dataset]['REAL_LABEL_NAME']
         if test_labels:
             self.test_labels = [self.label_name[x] for x in test_labels] 
@@ -216,7 +218,7 @@ class ManualDataset(BaseDataset):
         with open(   os.path.join(self.base_dir, f'classmap_{self.min_fg}.json') , 'r' ) as fopen:
             cls_map =  json.load( fopen)
             fopen.close()
-        if (self.min_fg != 1):
+        if (self.min_fg != '1'):
             self.tp1_cls_map = cls_map
         else:
             with open(   os.path.join(self.base_dir, 'classmap_1.json') , 'r' ) as fopen:
@@ -337,8 +339,11 @@ class ManualDataset(BaseDataset):
                 
                 if self.test_labels and self.unlbl_pids:
                     if not (cls in self.test_labels and pid not in self.unlbl_pids): 
-                        self.idx_by_class[cls] += [ self.scan_z_idx[pid][_sli] for _sli in slice_list ]
-                        self.debug_cls[cls].add(pid)
+                        try:
+                            self.idx_by_class[cls] += [ self.scan_z_idx[pid][_sli] for _sli in slice_list ]
+                            self.debug_cls[cls].add(pid)
+                        except:
+                            breakpoint()
                 else:
                     self.idx_by_class[cls] += [ self.scan_z_idx[pid][_sli] for _sli in slice_list ]
         
@@ -476,3 +481,43 @@ class ManualDataset(BaseDataset):
             'support_images': [support_images], #
             'support_mask': [support_mask],
         }
+
+    def get_samples(self, curr_scan_id, curr_z_id, ignore_idxs ,n_images = 5):
+        """
+        Return a list of n_images Image-Label pairs except the current image, and images in labeled set (They contain unseen labels)
+        """
+        out_list = [] # Return list of <img,lbl> pairs
+        curr_glbl_idx = self.scan_z_idx[curr_scan_id][curr_z_id]
+        ignore_idxs.append(curr_glbl_idx)
+        all_idxs = [i for i in range(len(self.actual_dataset)) if i not in ignore_idxs] # Get potential samples
+        np.random.shuffle(all_idxs)
+        return_idxs = all_idxs[:n_images]
+        for i in return_idxs:
+            curr_dict = self.actual_dataset[i]
+            img = curr_dict['img']
+            lb = curr_dict['lb']
+
+            img = np.float32(img)
+            lb = np.float32(lb).squeeze(-1) # NOTE: to be suitable for the PANet structure (256,256)
+            
+            img = torch.from_numpy(img)
+            lb  = torch.from_numpy(lb)
+
+            is_start = curr_dict["is_start"]
+            is_end = curr_dict["is_end"]
+            nframe = np.int32(curr_dict["nframe"])
+            scan_id = curr_dict["scan_id"]
+            z_id    = curr_dict["z_id"]
+
+            sample = {"image": img,
+                    "label":lb,
+                    "is_start": is_start,
+                    "is_end": is_end,
+                    "nframe": nframe,
+                    "scan_id": scan_id,
+                    "z_id": z_id
+                    }
+            
+            out_list.append(sample)
+
+        return out_list

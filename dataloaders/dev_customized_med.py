@@ -9,6 +9,7 @@ import numpy as np
 
 from dataloaders.common import ReloadPairedDataset, ValidationDataset
 from dataloaders.ManualDataset import ManualDataset
+from dataloaders.test_dataset import tdataset
 
 def attrib_basic(_sample, class_id):
     """
@@ -186,7 +187,7 @@ def fewshot_pairing(paired_sample, n_ways, n_shots, cnt_query, coco=False, mask_
 
 
 def med_fewshot(dataset_name, base_dir, tr_pids, mode, scan_per_load,
-        transforms, act_labels, n_ways, n_shots, max_iters_per_load, min_fg = '', n_queries=1, fix_parent_len = None, exclude_list = [], **kwargs):
+        transforms, act_labels, n_ways, n_shots, max_iters_per_load, norm_func=None, min_fg = '', n_queries=1, fix_parent_len = None, exclude_list = [], **kwargs):
     """
     Args:
         dataset_name:
@@ -223,7 +224,7 @@ def med_fewshot(dataset_name, base_dir, tr_pids, mode, scan_per_load,
 
     mydataset = med_set(which_dataset = dataset_name, base_dir=base_dir, pids=tr_pids, mode = mode,\
          scan_per_load = scan_per_load, transforms=transforms, min_fg = min_fg, fix_length = fix_parent_len,\
-         exclude_list = exclude_list, **kwargs)
+         exclude_list = exclude_list,extern_normalize_func = norm_func, **kwargs)
 
     mydataset.add_attrib('basic', attrib_basic, {})
 
@@ -258,7 +259,7 @@ def update_loader_dset(loader, parent_set):
     loader.dataset.update_index()
     print(f'###### Loader and dataset have been updated ######' )
 
-def med_fewshot_val(dataset_name, base_dir,tr_pids, scan_per_load, act_labels, npart, mode='val', transforms=None, exclude_list = [], fix_length = None, nsup = 1, **kwargs):
+def med_fewshot_val(dataset_name, base_dir,tr_pids, scan_per_load, act_labels, npart, mode='val', transforms=None, min_fg = '',exclude_list = [], fix_length = None, nsup = 1, **kwargs):
     """
     validation set for med images
     Args:
@@ -281,10 +282,41 @@ def med_fewshot_val(dataset_name, base_dir,tr_pids, scan_per_load, act_labels, n
     """
 
     mydataset = ManualDataset(which_dataset = dataset_name, base_dir=base_dir, pids=tr_pids, mode = mode,\
-         scan_per_load = scan_per_load, transforms=transforms, min_fg = 100, fix_length = fix_length,\
+         scan_per_load = scan_per_load, transforms=transforms, min_fg = min_fg, fix_length = fix_length,\
          exclude_list = exclude_list, **kwargs)
 
 
     valset = ValidationDataset(mydataset, test_classes = act_labels, npart = npart)
 
     return valset, mydataset
+
+def test_train(dataset_name, base_dir,tr_pids, scan_per_load, act_labels, npart, mode='val', transforms=None, exclude_list = [], fix_length = None, nsup = 1, **kwargs):
+    """
+    validation set for med images
+    Args:
+        dataset_name:
+            indicates what dataset to use
+        base_dir:
+            SABS dataset directory
+        mode: (original split)
+            which split to use
+            choose from ('train', 'val', 'trainval', 'trainaug')
+        idx_split:
+            index of split
+        scan_per_batch:
+            number of scans to load into memory as the dataset is large
+            use that together with reload_buffer
+        act_labels:
+            actual labels involved in training process. Should be a subset of all labels
+        npart: number of chunks for splitting a 3d volume
+        nsup:  number of support scans, equivalent to nshot
+    """
+
+    mydataset = tdataset(which_dataset = dataset_name, base_dir=base_dir, pids=tr_pids, mode = mode,\
+            scan_per_load = scan_per_load, transforms=transforms, min_fg = 100, fix_length = fix_length,\
+            exclude_list = exclude_list, **kwargs)
+
+
+    # valset = ValidationDataset(mydataset, test_classes = act_labels, npart = npart)
+
+    return mydataset

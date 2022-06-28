@@ -101,9 +101,9 @@ def main(_run, _config, _log):
     if data_name == 'SABS':
         baseset_name = 'SABS'
         max_label = 13
-    elif data_name == 'C0_Superpix':
-        raise NotImplementedError
+    elif data_name == 'C0':
         baseset_name = 'C0'
+        max_label = 3
     elif data_name == 'CHAOST2_Superpix' or data_name == 'CHAOST2':
         baseset_name = 'CHAOST2'
         max_label = 4
@@ -139,7 +139,7 @@ def main(_run, _config, _log):
         norm_func = get_CT_norm_op(which_dataset=baseset_name, base_dir=_config['path'][baseset_name]['data_dir'], tr_pids=tr_pids_all)
     else:
         norm_func = get_normalize_op(modality = 'MR', fids = None)
-    
+    update_class_slice_index(baseset_name, int(_config["min_fg_data"]))
     ### DATSET SHOULD CONTAIN ALL TRAINING IMAGES (NOT JUST LABELED) WHILE UNSUPERVISED TRAINING
     tr_paired,act_train_parent = med_fewshot(
         dataset_name=baseset_name,
@@ -156,7 +156,8 @@ def main(_run, _config, _log):
         act_labels=DATASET_INFO[baseset_name]['LABEL_GROUP']['pa_all'], # Can train on all pseudo-labels (Skip when query is a labeled image with unseen label - This means query will have access to GT unseen label)
         n_ways=1,
         n_shots=1,
-        max_iters_per_load=_config['max_iters_per_load']
+        max_iters_per_load=_config['max_iters_per_load'],
+        norm_func=norm_func
     )
     
     ### While estimating pseudo-labels just use the labeled support images (Can be experimented with later on)
@@ -172,14 +173,15 @@ def main(_run, _config, _log):
         act_labels=DATASET_INFO[baseset_name]['LABEL_GROUP']['pa_all'], # This has to contain all classes, as it is being used for providing support images to unlabeled query images (We predict all labels)
         n_ways=1,
         n_shots=1,
-        max_iters_per_load=_config['max_iters_per_load']
+        max_iters_per_load=_config['max_iters_per_load'],
+        norm_func=norm_func
     )
 
     # model_seg gets set to eval here    
-    print("### Generating initial pseudo-labels ####")
+    # print("### Generating initial pseudo-labels ####")
     get_unlbl_pseudo_lbls_sep(model=model_seg,sup_dataset = tr_parent,unlbl_ids=unlbl_pids,norm_func = norm_func, _config=_config,_log=_log)
     model_seg.train()
-    update_class_slice_index(baseset_name)
+    update_class_slice_index(baseset_name, int(_config["min_fg_data"]))
 
     ### dataloaders
     trainloader = DataLoader(
@@ -211,7 +213,7 @@ def main(_run, _config, _log):
             print("Re-Estimate labels")
             get_unlbl_pseudo_lbls_sep(model=model_seg,sup_dataset = tr_parent,norm_func = norm_func, unlbl_ids=unlbl_pids,_config=_config,_log=_log)  
             model_seg.train()
-            update_class_slice_index(baseset_name)
+            update_class_slice_index(baseset_name, int(_config["min_fg_data"]))
             _log.info('###### Support PIDs for each class : {} ######'.format(supp_cls_pid_idx))
             
         ## If we finished the final cycle, save the best model and return
