@@ -61,8 +61,7 @@ def main(_run, _config, _log):
     if data_name == 'SABS':
         baseset_name = 'SABS'
         max_label = 13
-    elif data_name == 'C0_Superpix':
-        raise NotImplementedError
+    elif data_name == 'C0':
         baseset_name = 'C0'
         max_label = 3
     elif data_name == 'CHAOST2_Superpix' or data_name == 'CHAOST2':

@@ -9,7 +9,6 @@ import numpy as np
 
 from dataloaders.common import ReloadPairedDataset, ValidationDataset
 from dataloaders.ManualDataset import ManualDataset
-from dataloaders.test_dataset import tdataset
 
 def attrib_basic(_sample, class_id):
     """
@@ -289,34 +288,3 @@ def med_fewshot_val(dataset_name, base_dir,tr_pids, scan_per_load, act_labels, n
     valset = ValidationDataset(mydataset, test_classes = act_labels, npart = npart)
 
     return valset, mydataset
-
-def test_train(dataset_name, base_dir,tr_pids, scan_per_load, act_labels, npart, mode='val', transforms=None, exclude_list = [], fix_length = None, nsup = 1, **kwargs):
-    """
-    validation set for med images
-    Args:
-        dataset_name:
-            indicates what dataset to use
-        base_dir:
-            SABS dataset directory
-        mode: (original split)
-            which split to use
-            choose from ('train', 'val', 'trainval', 'trainaug')
-        idx_split:
-            index of split
-        scan_per_batch:
-            number of scans to load into memory as the dataset is large
-            use that together with reload_buffer
-        act_labels:
-            actual labels involved in training process. Should be a subset of all labels
-        npart: number of chunks for splitting a 3d volume
-        nsup:  number of support scans, equivalent to nshot
-    """
-
-    mydataset = tdataset(which_dataset = dataset_name, base_dir=base_dir, pids=tr_pids, mode = mode,\
-            scan_per_load = scan_per_load, transforms=transforms, min_fg = 100, fix_length = fix_length,\
-            exclude_list = exclude_list, **kwargs)
-
-
-    # valset = ValidationDataset(mydataset, test_classes = act_labels, npart = npart)
-
-    return mydataset

@@ -10,8 +10,7 @@ PROTO_GRID=8 # using 32 / 8 = 4, 4-by-4 prototype pooling window during training
 CPT="exp_CARD" # Name of current experiment
 DATASET='C0' ## Abdominal-MRI
 NWORKER=0
-# ALL_EV=( 0 1 2 3 4) # 5-fold cross validation (0, 1, 2, 3, 4) 
-ALL_EV=( 0 ) # 5-fold cross validation (0, 1, 2, 3, 4) 
+ALL_EV=( 0 1 2 3 4 ) # 5-fold cross validation (0, 1, 2, 3, 4) 
 SEED='1234'
 MIN_FG=1
 ### Use LV_BP as testing class
@@ -28,11 +27,11 @@ do
     echo ===================================
     
     echo "Start training for fold : ${EVAL_FOLD}"
-
+        
     PREFIX="train_sup_${DATASET}_lbgroup${LABEL_SETS}_vfold${EVAL_FOLD}"
     echo $PREFIX
     LOGDIR="./exps/${CPT}_${LABEL_SETS}/"
-
+    
     if [ ! -d $LOGDIR ]
     then
         mkdir -p $LOGDIR
