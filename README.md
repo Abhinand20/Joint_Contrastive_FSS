@@ -19,3 +19,4 @@
 1 | [Semi-supervised few-shot learning for medical image segmentation](https://arxiv.org/pdf/2003.08462.pdf) | |
 2 | [PoissonSeg: Semi-Supervised Few-Shot Medical Image Segmentation via Poisson Learning](https://arxiv.org/pdf/2108.11694.pdf) | |
 3 | [Uncertainty-Aware Semi-Supervised Few Shot Segmentation](https://arxiv.org/pdf/2110.08954.pdf) | |
+4 | [Self-Paced Contrastive Learning for Semi-supervised Medical Image Segmentation with Meta-labels](https://openreview.net/pdf?id=8Uui49rOfc)
