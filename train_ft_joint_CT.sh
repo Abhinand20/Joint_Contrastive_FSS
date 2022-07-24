@@ -1,6 +1,6 @@
 #!/bin/bash
 # Joint training 
-GPUID1=0
+GPUID1=3
 export CUDA_VISIBLE_DEVICES=$GPUID1
 
 
