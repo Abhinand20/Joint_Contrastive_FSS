@@ -1,6 +1,6 @@
 #!/bin/bash
 # train a model to segment abdominal MRI (T2 fold of CHAOS challenge)
-GPUID1=0
+GPUID1=2
 export CUDA_VISIBLE_DEVICES=$GPUID1
 
 

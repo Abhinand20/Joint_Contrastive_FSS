@@ -328,7 +328,8 @@ def main(_run, _config, _log):
             
             ## Get segmentation loss and contrastive loss
             try:
-                query_pred, align_loss, debug_vis, assign_mats = model_seg(support_images, support_fg_mask, support_bg_mask, query_images, isval = False, val_wsize = None)
+                #query_pred, align_loss, debug_vis, assign_mats = model_seg(support_images, support_fg_mask, support_bg_mask, query_images, isval = False, val_wsize = None)
+                query_pred, align_loss = model_seg(support_images, support_fg_mask, support_bg_mask, query_images)
             except:
                 print("Faulty batch detected, skip!")
                 continue

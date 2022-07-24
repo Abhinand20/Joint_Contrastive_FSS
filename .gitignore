@@ -1,0 +1,6 @@
+data/*
+*/__pycache__/*
+exps/*
+models/*
+pretrained_model/*
+__pycache__

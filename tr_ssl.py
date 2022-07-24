@@ -153,8 +153,8 @@ def main(_run, _config, _log):
 
             optimizer.zero_grad()
            
-            query_pred, align_loss, debug_vis, assign_mats = model(support_images, support_fg_mask, support_bg_mask, query_images, isval = False, val_wsize = None)
-
+            #query_pred, align_loss, debug_vis, assign_mats = model(support_images, support_fg_mask, support_bg_mask, query_images, isval = False, val_wsize = None)
+            query_pred, align_loss = model(support_images, support_fg_mask, support_bg_mask, query_images)
 
             query_loss = criterion(query_pred, query_labels)
             loss = query_loss + align_loss

@@ -125,8 +125,8 @@ def get_unlbl_pseudo_lbls_sep(model,sup_dataset,unlbl_ids,_config,_log, norm_fun
                 sup_fgm_part = [[shot_tensor.unsqueeze(0) for shot_tensor in support_fg_mask[0][q_part]]]
                 sup_bgm_part = [[shot_tensor.unsqueeze(0) for shot_tensor in support_bg_mask[0][q_part]]]
 
-                query_pred, _, _, assign_mats = model( sup_img_part , sup_fgm_part, sup_bgm_part, query_images, isval = True, val_wsize = _config["val_wsize"] )
-                
+                #query_pred, _, _, assign_mats = model( sup_img_part , sup_fgm_part, sup_bgm_part, query_images, isval = True, val_wsize = _config["val_wsize"] )
+                query_pred, _, = model( sup_img_part , sup_fgm_part, sup_bgm_part, query_images)
                 query_pred = np.array(query_pred.argmax(dim=1)[0].cpu())
                 _pred[...,ii] = query_pred.copy()
 
